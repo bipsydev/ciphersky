@@ -1,8 +1,41 @@
-# Bluesky Social App
+# Ciphersky (A fork of Bluesky Social)
 
-Welcome friends! This is the codebase for the Bluesky Social app.
+Welcome friends! This is the codebase for __Ciphersky__, a fork of the official Bluesky Social app that adds "private" posts via encryption.
 
-Get the app itself:
+## Disclaimer
+
+I am not a cybersecurity or cryptography expert. This application does not promise to encrypt or decrypt data in any secure or invulnerable method. You should expect your "private" posts to be easily decrypted by others.
+
+ATProto is entirely public by design; this app will use your ATProto repo to store some necessary public app data to make encryption and permission control work (your public key and your "allowed" list of users, respectively).
+
+Do *not* use for any real secrets!
+
+## The Goal
+
+This project aims to let you to manage an internal "allowed" list of users who will have access to your "private" posts. Users of Ciphersky who are on your list will see the post content, while other users will not see the post at all. Users of the official Bluesky Social app or other third-party clients (even if they are on your "allowed" list) will see only the meaningless garbled encrypted message.
+
+## The Plan
+
+- [ ] __Encryption Setup__: When you login for the first time, the app generates an X25519 keypair. The private key is stored locally on your device in Android Keystore, and your public key is posted in a record on your ATProto repo (in a separate namespace from Bluesky data, don't worry). This is used by AES for as the key for encryption and decryption.
+- [ ] __Permission Control__: Other users of Ciphersky can be added to your "allowed" user list. This will allow them to decrypt and read your "private" posts. Doing this will compute a Shared Key and post an HKDF-wrapped AES content key to your public "allowed" list key bundle.
+- [ ] __Permission Discovery__: When the added user discovers they've been added to your list, they compute the same Shared Key and cache it locally for decryption.
+  - *Implementation Note*: I'm debating active scanning of followed users vs lazy key discovery. Will likely start with the former and later implement the latter.
+- [ ] __Permission Revocation__: Revoking a user from your "allowed" list will remove them from your key bundle, and the app on the other user's end will detect this removal and delete their Shared Key from cache. Since they technically could still have a copy of the key elsewhere, Encryption Setup is performed again and a new version of your key is posted *for future posts*. New encrypted posts will use this version of your key, and people on your allowed list will recompute their Shared Key.
+  - *Security Note*: Be aware that your existing posts are encrypted with the previous version, and that revoked users may still have a copy of the Shared Key elsewhere! This means that __*revoking access from a user does not securely revoke their access to your existing posts,*__ only future posts.
+    - I am exploring the possibility of editing ATProto records in order to re-encrypt existing posts for complete, secure revocation.
+- [ ] __Post Composer Encryption Toggle__: The Post Composer will have an additional toggle labeled "Encrypt Post". Posting with this toggle on will take your original message and encrypt it using AES-256-GCM with your public key, then publicly post the encrypted text with a signifier Unicode character at the beginning to mark it as an encrypted Ciphersky message.
+- [ ] __Reading Encrypted Posts__: When the Ciphersky client sees the Unicode signifier at the beginning of a post, it knows to use your Shared Key you have with the post's author to decrypt it and reveal the message.
+
+
+
+
+<br>
+
+---
+
+# Bluesky Social's original README
+
+Get the official Bluesky Social app:
 
 - **Web: [bsky.app](https://bsky.app)**
 - **iOS: [App Store](https://apps.apple.com/us/app/bluesky-social/id6444370199)**
